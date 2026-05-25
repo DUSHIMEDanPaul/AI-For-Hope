@@ -1,0 +1,56 @@
+name: Continuous Integration & Service Verification
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Linting & Testing Utilities
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest black
+
+      - name: Execute Code Formatting Check (Ruff / Black)
+        run: |
+          black --check .
+
+      - name: Run Backend PyTest Test Suites
+        run: |
+          pytest services/patient-service/tests/ --doctest-modules
+
+  build-and-push-images:
+    needs: test-and-lint
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Log in to AWS ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Core Patient Container
+        run: |
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/hope-patient-service:latest -f ./services/patient-service/Dockerfile .
+          docker push ${{ steps.login-ecr.outputs.registry }}/hope-patient-service:latest

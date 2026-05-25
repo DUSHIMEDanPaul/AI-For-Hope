@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  kong-gateway:
+    image: kong:3.4
+    container_name: gateway_proxy
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/kong.yml
+    volumes:
+      - ./infrastructure/nginx/kong.yml:/usr/local/kong/kong.yml
+    depends_on:
+      - postgres-db
+      - redis-cache
+    networks:
+      - hope_network
+
+  patient-service:
+    build:
+      context: .
+      dockerfile: ./services/patient-service/Dockerfile
+    container_name: patient_microservice
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://hope_usr:secure_pw@postgres-db:5432/hope_patients
+      - REDIS_URL=redis://redis-cache:6379/0
+      - JWT_SECRET=super_secret_signing_key
+    depends_on:
+      - postgres-db
+    networks:
+      - hope_network
+
+  triage-engine:
+    build:
+      context: .
+      dockerfile: ./ml-services/triage-engine/Dockerfile
+    container_name: triage_ai_engine
+    environment:
+      - REDIS_URL=redis://redis-cache:6379/1
+    depends_on:
+      - redis-cache
+    networks:
+      - hope_network
+
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: relational_db
+    environment:
+      - POSTGRES_USER=hope_usr
+      - POSTGRES_PASSWORD=secure_pw
+      - POSTGRES_DB=hope_patients
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - hope_network
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: memory_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - hope_network
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  hope_network:
+    driver: bridge

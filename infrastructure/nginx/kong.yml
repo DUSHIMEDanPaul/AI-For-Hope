@@ -1,0 +1,19 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: patient-service
+    url: http://patient-service:8000
+    routes:
+      - name: patient-routes
+        paths:
+          - /api/v1/patients
+          - /api/v1/auth
+          - /api/v1/emr
+
+  - name: triage-service
+    url: http://triage-engine:8000
+    routes:
+      - name: triage-routes
+        paths:
+          - /api/v1/triage
