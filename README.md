@@ -4,7 +4,6 @@
 
 AI for Hope is a mobile skin-condition classifier built to run entirely on-device, without an internet connection. It is being developed with deployment at [Mahama Refugee Camp](https://en.wikipedia.org/wiki/Mahama_Refugee_Camp) in mind — a setting where dermatological expertise is scarce and reliable connectivity cannot be assumed. The goal is a lightweight, resilient screening aid that works where cloud-dependent tools cannot.
 
-> **Status:** Active development. The model and pipeline are functional; the project has not yet been deployed in the field. See [Project Status](#project-status) below.
 
 ---
 
